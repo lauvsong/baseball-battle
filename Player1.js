@@ -18,11 +18,17 @@ class Player1 {
     HOMERUN = 3;
 
     ball3_turn_cnt = 0;
-    hit = 0;
+    hit_cnt = 0;
+
+    out_cnt = 0;
 
     is_offence = true;
     ball4_target = [1,1];
-    prev_ball3 = false;
+    default_target = null
+
+    prev = null;
+    round = 0;
+    turn = 0;
 
     /**
      * 게임이 시작되면 호출됩니다.
@@ -40,6 +46,7 @@ class Player1 {
      */
     onRoundStart() {
         printLog(this.player_name+": onRoundStart!");
+        this.round++
     }
 
     /**
@@ -73,6 +80,7 @@ class Player1 {
             result = this.defense(data) 
         }
 
+        this.turn++
         printLog(this.player_name+": onTurnStart! " + result);
         
         return result;
@@ -95,18 +103,15 @@ class Player1 {
      *   result.runner: 주자의 수. 0~3
      */
     onTurnEnd(result) {
-        printLog(this.player_name+": onTurnEnd! choice:"+JSON.stringify(result.choice)+", result:"+result.result);
-        // printLog("strike: "+result.ball_count.s+" ball: "+result.ball_count.b+" out: "+result.ball_count.o)
-        if (this.prev_ball3 && result.result != this.STRIKE) {
-            this.ball3_turn_cnt++
-            this.prev_ball3 = false
+        printLog(this.is_offence+" "+this.player_name+": onTurnEnd! choice:"+JSON.stringify(result.choice)+", result:"+result.result);
+        printLog("strike: "+result.ball_count.s+" ball: "+result.ball_count.b+" out: "+result.ball_count.o);
 
-            if ((result.result == this.HOMERUN) || (result.result == this.ANTA)) {
-                this.hit++
-            }
-        } else if (result.ball_count.b == 3) {
-            this.prev_ball3 = true
-        }
+        if (this.is_offence)
+            this.stat_offence(result);
+        else
+            this.stat_defense(result);
+
+        this.prev = result;
     }
 
     /*치
@@ -119,14 +124,10 @@ class Player1 {
      */
     onRoundEnd(result) {
         printLog(this.player_name+": onRoundEnd! win:"+result.win+", score:"+JSON.stringify(result.score));
-        let hit_rate = this.hit / this.ball3_turn_cnt;
-        // printLog("hit: "+this.hit+" ballturn: "+this.ball3_turn_cnt)
-        if (!this.is_offence && hit_rate >= 0.5) {
-            this.ball4_target = [2,1];
-        }
+        this.feedback_offence();
+        this.feedback_defense();
 
-        this.hit = 0;
-        this.ball3_turn_cnt = 0;
+        this.init_round();
     }
 
     /**
@@ -143,10 +144,11 @@ class Player1 {
     // 볼넷 직전 [1,1] 한번 선택해보기.
     // 실패 시 뒤로 안 치기.
     attack(data) {
-        if (!this.prev_ball3 && data.ball_count.b == 3) 
-            return [1,1]
+        if (this.round == 1 && data.ball_count.b == 3 && this.prev != null && this.prev.result == this.BALL) {
+            return [1,1];
+        } 
         else 
-            return null
+            return this.default_target;
         
     }
 
@@ -155,16 +157,67 @@ class Player1 {
     // - 볼셋까지 가기 전 타자가 헛스윙해서 3스트라이크 할 확률도..
     defense(data) {
         if (data.ball_count.b == 3) {
-            return this.ball4_target
+            return this.ball4_target;
+        } else
+            return null;
+    }
+
+    // 3스트라이크 당한 횟수 산출
+    stat_offence(result) {
+        if (result.result == this.STRIKE && result.ball_count.s == 0)
+            this.out_cnt++;
+    }
+
+    // 볼넷 당한 횟수 산출
+    stat_defense(result) {
+        if (this.prev == null) return
+        if (this.prev.ball_count.b != 3) return
+        if (result.ball_count.o == this.prev.ball_count.o + 1 || result.ball_count.o == 0) {
+            this.ball3_turn_cnt++;
+
+            if (result.result != this.STRIKE) {
+                this.hit_cnt++
+            }
         }
-        else
-            return null
+    }
+
+    /**
+     * 라운드 공격 결과 피드백
+     * - 삼진 아웃 비율 50% 이상일 시, 기본 좌표 [1,1]로 변경 
+     */
+    feedback_offence() {
+        let out_rate = this.out_cnt / this.turn;
+        printLog("out_rate: "+out_rate+" out_cnt: "+this.out_cnt+" turn: "+this.turn);
+
+        if (out_rate >= 0.5)
+            this.default_target = [1,1];
+    }
+
+    /**
+     * 라운드 수비 결과 피드백
+     * - 홈런/안타 비율 50% 이상일 시, 기본 좌표 [2,1]로 변경
+     */
+    feedback_defense() {
+        let hit_rate = this.hit_cnt / this.ball3_turn_cnt;
+        printLog("hit_rate: "+hit_rate+" hit_cnt: "+this.hit_cnt+" ball3_turn_cnt: "+this.ball3_turn_cnt);
+
+        if (hit_rate >= 0.5)
+            this.ball4_target = [2,1];
+    }
+
+    init_round() {
+        this.hit_cnt = 0;
+        this.out_cnt = 0;
+        this.turn = 0;
+        this.ball3_turn_cnt = 0;
     }
 }
 
-// 데이터 수집. (볼넷 직전 상대방의 좌표)
+// ## 피드백 전략
+// 공격이면
+// 1. onTurnEnd -> 3스트라이크 횟수, 전체 횟수 구하기
+// 2. onRoundEnd -> 3스트라이크 / 전체 비율 50% 이상일 시, default_target [1,1]
 
-// ## 개선 전략
-// 1. 홈런 / 안타 당한 비율 (볼넷은 불가능)
-//     1. 50% 이하 시 유지
-//     2. 그 이상일 시 상대의 전략임. 마지막 볼 1/3 존으로 변경 (1행 제외)
+// 수비면
+// 1. onTurnEnd -> 홈런/안타 횟수, 볼넷 기회턴 횟수 구하기
+// 2. onRoundEnd -> 홈런/안타 / 볼넷 기회 비율 50% 이상일 시, ball4_target [2,1]
