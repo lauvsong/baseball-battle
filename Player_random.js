@@ -1,4 +1,4 @@
-class {
+class Player_random {
 
     /**
      * 코드는 JAVASCRIPT 로 작성해 주시고, 위의 첫줄과 on...() 메소드의 이름은 변경하지 말아주세요.
