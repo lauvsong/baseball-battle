@@ -1,4 +1,4 @@
-class Player2 {
+class {
 
     /**
      * 코드는 JAVASCRIPT 로 작성해 주시고, 위의 첫줄과 on...() 메소드의 이름은 변경하지 말아주세요.
@@ -18,7 +18,6 @@ class Player2 {
      */
     onGameStart() {
         // printLog(string)는 플레이 영역 하단의 게임 로그 영역에 텍스트를 출력하는 함수입니다.
-        printLog(this.player_name+": onGameStart!");
     }
 
     /**
@@ -27,7 +26,6 @@ class Player2 {
      * 1라운드는 야구 한 경기(9이닝)를 의미합니다.
      */
     onRoundStart() {
-        printLog(this.player_name+": onRoundStart!");
     }
 
     /**
@@ -54,8 +52,6 @@ class Player2 {
         let row = Math.floor(Math.random() * 4);
         // col: 0 or 1 or 2 or 3 중 랜덤 선택. 3은 범위 밖의 선택.
         let col = Math.floor(Math.random() * 4);
-
-        printLog(this.player_name+": onTurnStart! ["+row+", "+col+"]");
         
         return [row, col];
     }
@@ -77,7 +73,6 @@ class Player2 {
      *   result.runner: 주자의 수. 0~3
      */
     onTurnEnd(result) {
-        printLog(this.player_name+": onTurnEnd! choice:"+JSON.stringify(result.choice)+", result:"+result.result);
     }
 
     /**
@@ -89,7 +84,6 @@ class Player2 {
      *   result.losecnt: 진 횟수
      */
     onRoundEnd(result) {
-        printLog(this.player_name+": onRoundEnd! win:"+result.win+", score:"+JSON.stringify(result.score));
     }
 
     /**
@@ -98,6 +92,5 @@ class Player2 {
      *   result.win: -1(졌을때) or 0(비겼을때) or 1(이겼을때)
      */
     onGameEnd(result) {
-        printLog(this.player_name+": onGameEnd! win:"+result.win);
     }
 }
