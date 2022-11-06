@@ -169,10 +169,10 @@ class Player1 {
                 this.out_cnt++;
         }
 
-        if (this.isFirstBall3(this.curr) && this.is_ball4_center_strategy) {
+        if (this.isFirstBall3(this.curr)) {
             this.center_turn_cnt++;
 
-            if (this.isHit(result))
+            if (this.isCenterRow(result))
                 this.center_cnt++;
         }
     }
@@ -195,7 +195,7 @@ class Player1 {
         if (this.hitter_change_cnt != 0) {
             const out_rate = this.out_cnt / this.hitter_change_cnt;
             
-            if (out_rate > 0.9)
+            if (out_rate >= 0.9)
                 this.offence_target = this.toggleOffenceTarget();
             
             printLog("out_rate: "+out_rate+" out_cnt: "+this.out_cnt+" turn: "+this.hitter_change_cnt);
@@ -203,7 +203,7 @@ class Player1 {
 
         if (this.center_turn_cnt != 0) {
             const center_rate = this.center_cnt / this.center_turn_cnt;
-            this.is_ball4_center_strategy = 0.9 < center_rate ? true : false;
+            this.is_ball4_center_strategy = 0.9 <= center_rate ? true : false;
             
             printLog("center_rate: "+center_rate+" center_cnt: "+this.center_cnt+" turn: "+this.center_turn_cnt)
         }
@@ -214,7 +214,7 @@ class Player1 {
         if (this.ball3_turn_cnt != 0) {
             const hit_rate = this.hit_cnt / this.ball3_turn_cnt;
 
-            if (0.9 < hit_rate)
+            if (0.9 <= hit_rate)
                 this.defense_ball3_target = this.toggleDefenseBall3Target();
             
             printLog("hit_rate: "+hit_rate+" hit_cnt: "+this.hit_cnt+" ball3_turn_cnt: "+this.ball3_turn_cnt);
@@ -249,6 +249,11 @@ class Player1 {
 
     isHit(result) {
         return (result.result == this.HOMERUN) || (result.result == this.HIT);
+    }
+
+    isCenterRow(result) {
+        const s = result.choice.op
+        return s != null && s[0] == 1
     }
 
 
