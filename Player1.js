@@ -150,7 +150,6 @@ class Player1 {
             return this.CENTER;
         else 
             return this.offence_target;
-        
     }
 
 
@@ -166,10 +165,8 @@ class Player1 {
         if (this.isHitterChange(result)) {
             this.hitter_change_cnt++;
 
-            if (this.is3strike(result)) {
+            if (this.is3strike(result))
                 this.out_cnt++;
-                printLog(this.out_cnt)
-            }
         }
 
         if (this.isFirstBall3(this.curr) && this.is_ball4_center_strategy) {
@@ -221,7 +218,6 @@ class Player1 {
                 this.defense_ball3_target = this.toggleDefenseBall3Target();
             
             printLog("hit_rate: "+hit_rate+" hit_cnt: "+this.hit_cnt+" ball3_turn_cnt: "+this.ball3_turn_cnt);
-
         }
     }
 
@@ -277,5 +273,5 @@ class Player1 {
         this.center_turn_cnt = 0;
     }
 
-    
+
 }
