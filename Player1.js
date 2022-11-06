@@ -19,16 +19,25 @@ class Player1 {
 
     ball3_turn_cnt = 0;
     hit_cnt = 0;
-
     out_cnt = 0;
 
     is_offence = true;
-    ball4_target = [1,1];
-    default_target = null
+    offence_target = null
+    defense_ball3_target = [1,1];
 
+    curr = null;
     prev = null;
-    round = 0;
+
     turn = 0;
+
+    is_ball4_center_strategy = true;
+    center_turn_cnt = 0;
+    center_cnt = 0;
+    center = [1,1];
+    alternative_target = [2,1];
+
+    // op_offence_choice = new Set();
+    // op_defense_choice = new Set();
 
     /**
      * 게임이 시작되면 호출됩니다.
@@ -46,7 +55,6 @@ class Player1 {
      */
     onRoundStart() {
         printLog(this.player_name+": onRoundStart!");
-        this.round++
     }
 
     /**
@@ -70,6 +78,8 @@ class Player1 {
      */
     onTurnStart(data) {
         let result;
+
+        this.curr = data;
 
         if (data.is_offence) {
             this.is_offence = true;
@@ -106,7 +116,7 @@ class Player1 {
         printLog(this.is_offence+" "+this.player_name+": onTurnEnd! choice:"+JSON.stringify(result.choice)+", result:"+result.result);
         printLog("strike: "+result.ball_count.s+" ball: "+result.ball_count.b+" out: "+result.ball_count.o);
 
-        if (this.is_offence)
+        if (this.is_offence) 
             this.stat_offence(result);
         else
             this.stat_defense(result);
@@ -139,16 +149,41 @@ class Player1 {
         printLog(this.player_name+": onGameEnd! win:"+result.win);
     }
 
+    isOut(data) {
+        return (this.prev != null ) && ((data.ball_count.o == this.prev.ball_count.o + 1) || (data.ball_count.o == 0))
+    }
+
+    isFirstBall3(data) {
+        return (data.ball_count.b == 3) && (this.prev != null) && (this.prev.result == this.BALL)
+    }
+
+    is3strike(data) {
+        return (this.prev != null) && ((data.ball_count.o == this.prev.ball_count.o + 1) || (data.ball_count.o == 0))
+    }
+
+    isHit(result) {
+        return (result.result == this.HOMERUN) || (result.result == this.ANTA)
+    }
+
+    init_round() {
+        this.prev = null;
+        this.hit_cnt = 0;
+        this.out_cnt = 0;
+        this.turn = 0;
+        this.ball3_turn_cnt = 0;
+        this.center_cnt = 0;
+        this.center_turn_cnt = 0;
+    }
+
     // # 공격 전략
     // 일단 안 치기.
     // 볼넷 직전 [1,1] 한번 선택해보기.
     // 실패 시 뒤로 안 치기.
     attack(data) {
-        if (this.round == 1 && data.ball_count.b == 3 && this.prev != null && this.prev.result == this.BALL) {
-            return [1,1];
-        } 
+        if (this.isFirstBall3(data) && this.is_ball4_center_strategy)
+            return this.center;
         else 
-            return this.default_target;
+            return this.offence_target;
         
     }
 
@@ -157,26 +192,37 @@ class Player1 {
     // - 볼셋까지 가기 전 타자가 헛스윙해서 3스트라이크 할 확률도..
     defense(data) {
         if (data.ball_count.b == 3) {
-            return this.ball4_target;
+            return this.defense_ball3_target;
         } else
             return null;
     }
 
     // 3스트라이크 당한 횟수 산출
     stat_offence(result) {
-        if (result.result == this.STRIKE && result.ball_count.s == 0)
+        if (this.is3strike(result))
             this.out_cnt++;
+
+        if (this.isFirstBall3(this.curr) && this.is_ball4_center_strategy) {
+            this.center_turn_cnt++;
+
+            if (this.isHit(result))
+                this.center_cnt++;
+        }
     }
 
     // 볼넷 당한 횟수 산출
     stat_defense(result) {
-        if (this.prev == null) return
-        if (this.prev.ball_count.b != 3) return
-        if (result.ball_count.o == this.prev.ball_count.o + 1 || result.ball_count.o == 0) {
+        if (this.prev == null)
+            return;
+        
+        if (this.prev.ball_count.b != 3)
+            return;
+
+        if (this.isOut(result)) {
             this.ball3_turn_cnt++;
 
             if (result.result != this.STRIKE) {
-                this.hit_cnt++
+                this.hit_cnt++;
             }
         }
     }
@@ -189,8 +235,13 @@ class Player1 {
         let out_rate = this.out_cnt / this.turn;
         printLog("out_rate: "+out_rate+" out_cnt: "+this.out_cnt+" turn: "+this.turn);
 
-        if (out_rate >= 0.5)
-            this.default_target = [1,1];
+        this.offence_target = (0.5 < out_rate) ? this.center : null;
+
+        let center_rate = this.center_cnt / this.center_turn_cnt;
+        printLog("center_rate: "+center_rate+" center_cnt: "+this.center_cnt+" turn: "+this.center_turn_cnt)
+
+        this.is_ball4_center_strategy = (0.5 < center_rate) ? true : false;
+
     }
 
     /**
@@ -200,17 +251,10 @@ class Player1 {
     feedback_defense() {
         let hit_rate = this.hit_cnt / this.ball3_turn_cnt;
         printLog("hit_rate: "+hit_rate+" hit_cnt: "+this.hit_cnt+" ball3_turn_cnt: "+this.ball3_turn_cnt);
-
-        if (hit_rate >= 0.5)
-            this.ball4_target = [2,1];
+        
+        this.defense_ball3_target = (hit_rate < 0.5) ? this.center : this.alternative_target;
     }
 
-    init_round() {
-        this.hit_cnt = 0;
-        this.out_cnt = 0;
-        this.turn = 0;
-        this.ball3_turn_cnt = 0;
-    }
 }
 
 // ## 피드백 전략
