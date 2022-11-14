@@ -37,6 +37,10 @@ class Player1 {
     center_turn_cnt = 0;
     center_cnt = 0;
 
+    is_inning_change = true;
+
+    op_defense = new Set();
+
     /**
      * 게임이 시작되면 호출됩니다.
      * 게임 중에 사용할 변수들의 초기화를 여기서 합니다.
@@ -82,6 +86,9 @@ class Player1 {
         if (data.is_offence != this.is_offence) {
             this.prev = null;
             this.is_offence = data.is_offence;
+            this.is_inning_change = true;
+        } else {
+            this.is_inning_change = false;
         }
 
         result = data.is_offence ? this.attack(data) : this.defense(data);
@@ -111,9 +118,10 @@ class Player1 {
         printLog(this.is_offence+" "+this.player_name+": onTurnEnd! choice:"+JSON.stringify(result.choice)+", result:"+result.result);
         printLog("strike: "+result.ball_count.s+" ball: "+result.ball_count.b+" out: "+result.ball_count.o);
 
-        if (this.is_offence)
+        if (this.is_offence) {
+            this.targetOffence(result);
             this.statOffence(result);
-        else
+        } else
             this.statDefense(result);
 
         this.prev = result;
@@ -129,8 +137,8 @@ class Player1 {
      */
     onRoundEnd(result) {
         printLog(this.player_name+": onRoundEnd! win:"+result.win+", score:"+JSON.stringify(result.score));
-        this.feedbackOffence();
-        this.feedbackDefense();
+        this.feedbackOffence(result);
+        this.feedbackDefense(result);
 
         this.initRound();
     }
@@ -160,6 +168,18 @@ class Player1 {
             return this.defense_target;
     }
 
+    targetOffence() {
+        if (this.is_inning_change) {
+            if (this.op_defense.size == 1) {
+                this.offence_target = this.setGet0(this.op_defense);
+            } else {
+                this.offence_target = null;
+            }
+
+            this.op_defense.clear();
+        }
+    }
+
 
     statOffence(result) {
         if (this.isHitterChange(result)) {
@@ -169,12 +189,7 @@ class Player1 {
                 this.out_cnt++;
         }
 
-        if (this.isFirstBall3(this.curr)) {
-            this.center_turn_cnt++;
-
-            if (this.isCenterRow(result))
-                this.center_cnt++;
-        }
+        this.setAdd(this.op_defense, result.choice.op);
     }
 
 
@@ -188,6 +203,7 @@ class Player1 {
             if (this.isHit(result))
                 this.hit_cnt++;
         }
+
     }
 
 
@@ -196,16 +212,9 @@ class Player1 {
             const out_rate = this.out_cnt / this.hitter_change_cnt;
             
             if (out_rate >= 0.9)
-                this.offence_target = this.toggleOffenceTarget();
+                this.offence_target = (this.offence_target == null) ? this.CENTER : this.offence_target;
             
             printLog("out_rate: "+out_rate+" out_cnt: "+this.out_cnt+" turn: "+this.hitter_change_cnt);
-        }
-
-        if (this.center_turn_cnt != 0) {
-            const center_rate = this.center_cnt / this.center_turn_cnt;
-            this.is_ball4_center_strategy = 0.9 <= center_rate ? true : false;
-            
-            printLog("center_rate: "+center_rate+" center_cnt: "+this.center_cnt+" turn: "+this.center_turn_cnt)
         }
     }
 
@@ -251,16 +260,6 @@ class Player1 {
         return (result.result == this.HOMERUN) || (result.result == this.HIT);
     }
 
-    isCenterRow(result) {
-        const s = result.choice.op
-        return s != null && s[0] == 1
-    }
-
-
-    toggleOffenceTarget() {
-        return this.offence_target == null ? this.CENTER : null;
-    }
-
 
     toggleDefenseBall3Target() {
         const alternative_target = [2,1];
@@ -276,7 +275,25 @@ class Player1 {
         this.ball3_turn_cnt = 0;
         this.center_cnt = 0;
         this.center_turn_cnt = 0;
+        this.op_defense.clear();
+        this.is_inning_change = true;
     }
 
+
+    setAdd(set, elem) {
+        if (elem == null) return;
+        return set.add(elem.toString());
+    }
+
+
+    setHas(set, elem) {
+        if (elem == null) return;
+        return set.has(elem.toString());
+    }
+
+    setGet0(set) {
+        const list = Array.from(set);
+        return list[0].split(',');
+    }
 
 }
