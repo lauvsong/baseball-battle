@@ -33,10 +33,6 @@ class Player1 {
 
     hitter_change_cnt = 0;
 
-    is_ball4_center_strategy = true;
-    center_turn_cnt = 0;
-    center_cnt = 0;
-
     is_inning_change = true;
 
     op_defense = new Set();
@@ -154,7 +150,7 @@ class Player1 {
 
 
     attack(data) {
-        if (this.isFirstBall3(data) && this.is_ball4_center_strategy)
+        if (this.isFirstBall3(data))
             return this.CENTER;
         else 
             return this.offence_target;
@@ -223,7 +219,7 @@ class Player1 {
         if (this.ball3_turn_cnt != 0) {
             const hit_rate = this.hit_cnt / this.ball3_turn_cnt;
 
-            if (0.9 <= hit_rate)
+            if (hit_rate >= 0.9)
                 this.defense_ball3_target = this.toggleDefenseBall3Target();
             
             printLog("hit_rate: "+hit_rate+" hit_cnt: "+this.hit_cnt+" ball3_turn_cnt: "+this.ball3_turn_cnt);
@@ -273,8 +269,6 @@ class Player1 {
         this.out_cnt = 0;
         this.hitter_change_cnt = 0;
         this.ball3_turn_cnt = 0;
-        this.center_cnt = 0;
-        this.center_turn_cnt = 0;
         this.op_defense.clear();
         this.is_inning_change = true;
     }
