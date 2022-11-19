@@ -83,6 +83,7 @@ class Player1 {
             this.prev = null;
             this.is_offence = data.is_offence;
             this.is_inning_change = true;
+            this.defense_ball3_target = this.CENTER;
         } else {
             this.is_inning_change = false;
         }
@@ -115,10 +116,11 @@ class Player1 {
         printLog("strike: "+result.ball_count.s+" ball: "+result.ball_count.b+" out: "+result.ball_count.o);
 
         if (this.is_offence) {
-            this.targetOffence(result);
             this.statOffence(result);
-        } else
-            this.statDefense(result);
+            this.targetOffence();
+        } else {
+            this.targetDefense(result);
+        }
 
         this.prev = result;
     }
@@ -133,8 +135,6 @@ class Player1 {
      */
     onRoundEnd(result) {
         printLog(this.player_name+": onRoundEnd! win:"+result.win+", score:"+JSON.stringify(result.score));
-        this.feedbackDefense(result);
-
         this.initRound();
     }
 
@@ -173,40 +173,15 @@ class Player1 {
 
 
     statOffence(result) {
-        if (this.isHitterChange(result)) {
-            this.hitter_change_cnt++;
-
-            if (this.is3strike(result))
-                this.out_cnt++;
-        }
-
         this.setAdd(this.op_defense, result.choice.op);
     }
 
-
-    statDefense(result) {
-        if ((this.prev != null) && (this.prev.ball_count.b != 3))
+    targetDefense(result) {
+        if (!this.isFirstBall3(this.curr))
             return;
-
-        if (this.isHitterChange(result)) {
-            this.ball3_turn_cnt++;
-
-            if (this.isHit(result))
-                this.hit_cnt++;
-        }
-
-    }
-
-
-    feedbackDefense() {
-        if (this.ball3_turn_cnt != 0) {
-            const hit_rate = this.hit_cnt / this.ball3_turn_cnt;
-
-            if (hit_rate >= 0.9)
-                this.defense_ball3_target = this.toggleDefenseBall3Target();
-            
-            printLog("hit_rate: "+hit_rate+" hit_cnt: "+this.hit_cnt+" ball3_turn_cnt: "+this.ball3_turn_cnt);
-        }
+        
+        if (this.isHit(result))
+            this.defense_ball3_target = this.toggleDefenseBall3Target();
     }
 
 
@@ -242,7 +217,7 @@ class Player1 {
 
     toggleDefenseBall3Target() {
         const alternative_target = [2,1];
-        return this.defense_ball3_target == this.CENTER ? alternative_target : this.CENTER;
+        return this.defense_ball3_target.toString() == this.CENTER.toString() ? alternative_target : this.CENTER;
     } 
 
 
