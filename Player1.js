@@ -16,7 +16,7 @@ class Player1 {
     BALL = 1;
     HIT = 2;
     HOMERUN = 3;
-
+    
     CENTER = [1,1];
 
     ball3_turn_cnt = 0;
@@ -133,7 +133,6 @@ class Player1 {
      */
     onRoundEnd(result) {
         printLog(this.player_name+": onRoundEnd! win:"+result.win+", score:"+JSON.stringify(result.score));
-        this.feedbackOffence(result);
         this.feedbackDefense(result);
 
         this.initRound();
@@ -165,15 +164,11 @@ class Player1 {
     }
 
     targetOffence() {
-        if (this.is_inning_change) {
-            if (this.op_defense.size == 1) {
-                this.offence_target = this.setGet0(this.op_defense);
-            } else {
-                this.offence_target = null;
-            }
-
-            this.op_defense.clear();
-        }
+        if (!this.is_inning_change)
+            return;
+        
+        this.offence_target = (this.op_defense.size == 1) ? this.setGet0(this.op_defense) : null;
+        this.op_defense.clear();
     }
 
 
@@ -200,18 +195,6 @@ class Player1 {
                 this.hit_cnt++;
         }
 
-    }
-
-
-    feedbackOffence() {
-        if (this.hitter_change_cnt != 0) {
-            const out_rate = this.out_cnt / this.hitter_change_cnt;
-            
-            if (out_rate >= 0.9)
-                this.offence_target = (this.offence_target == null) ? this.CENTER : this.offence_target;
-            
-            printLog("out_rate: "+out_rate+" out_cnt: "+this.out_cnt+" turn: "+this.hitter_change_cnt);
-        }
     }
 
 
@@ -279,12 +262,7 @@ class Player1 {
         return set.add(elem.toString());
     }
 
-
-    setHas(set, elem) {
-        if (elem == null) return;
-        return set.has(elem.toString());
-    }
-
+    
     setGet0(set) {
         const list = Array.from(set);
         return list[0].split(',');
